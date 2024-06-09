@@ -7,7 +7,7 @@ const User = require("../models/userModel");
 //@route POST /api/users/register
 //@access public
 const registerUser = asyncHandler(async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, role } = req.body;
   if (!username || !email || !password) {
     res.status(400);
     throw new Error("All fields are mandatory!");
@@ -18,13 +18,16 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("User already registered!");
   }
 
+  console.log("User data: ", req.body);
   //Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
   console.log("Hashed Password: ", hashedPassword);
+try{
   const user = await User.create({
     username,
     email,
     password: hashedPassword,
+    role
   });
 
   console.log(`User created ${user}`);
@@ -35,6 +38,10 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("User data is not valid");
   }
   res.json({ message: "Register the user" });
+}catch(error){
+  console.error("Error creating user:", error);
+  res.status(500).json({ error: "Could not create user" });
+}
 });
 
 //@desc Login user
@@ -55,10 +62,11 @@ const loginUser = asyncHandler(async (req, res) => {
           username: user.username,
           email: user.email,
           id: user.id,
+          role: user.role,
         },
       },
       process.env.ACCESS_TOKEN_SECERT,
-      { expiresIn: "15m" }
+      { expiresIn: "24h" }
     );
     res.status(200).json({ accessToken });
   } else {
